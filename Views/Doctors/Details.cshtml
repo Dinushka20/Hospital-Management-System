@@ -1,0 +1,18 @@
+@model Doctor
+@{
+    ViewData["Title"] = "Doctor Details";
+}
+<h2>@Model.FullName</h2>
+<p class="text-muted">@Model.Specialization · @Model.Department?.Name · @Model.Phone · @Model.Email</p>
+
+<h4 class="mt-4">Upcoming / Past Appointments</h4>
+<table class="table bg-white">
+    <thead><tr><th>Date</th><th>Patient</th><th>Reason</th><th>Status</th></tr></thead>
+    <tbody>
+    @foreach (var a in Model.Appointments)
+    {
+        <tr><td>@a.AppointmentDate</td><td>@a.Patient?.FullName</td><td>@a.Reason</td><td>@a.Status</td></tr>
+    }
+    </tbody>
+</table>
+<a asp-action="Index" class="btn btn-link">Back to list</a>

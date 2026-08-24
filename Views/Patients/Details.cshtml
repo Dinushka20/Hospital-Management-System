@@ -1,0 +1,41 @@
+@model Patient
+@{
+    ViewData["Title"] = "Patient Details";
+}
+<h2>@Model.FullName</h2>
+<p class="text-muted">@Model.Gender · DOB @Model.DateOfBirth.ToShortDateString() · @Model.Phone · Blood Group: @Model.BloodGroup</p>
+
+<h4 class="mt-4">Appointments</h4>
+<table class="table bg-white">
+    <thead><tr><th>Date</th><th>Doctor</th><th>Reason</th><th>Status</th></tr></thead>
+    <tbody>
+    @foreach (var a in Model.Appointments)
+    {
+        <tr><td>@a.AppointmentDate</td><td>@a.Doctor?.FullName</td><td>@a.Reason</td><td>@a.Status</td></tr>
+    }
+    </tbody>
+</table>
+
+<h4 class="mt-4">Medical Records</h4>
+<table class="table bg-white">
+    <thead><tr><th>Visit Date</th><th>Doctor</th><th>Diagnosis</th></tr></thead>
+    <tbody>
+    @foreach (var m in Model.MedicalRecords)
+    {
+        <tr><td>@m.VisitDate.ToShortDateString()</td><td>@m.Doctor?.FullName</td><td>@m.Diagnosis</td></tr>
+    }
+    </tbody>
+</table>
+
+<h4 class="mt-4">Bills</h4>
+<table class="table bg-white">
+    <thead><tr><th>Date</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead>
+    <tbody>
+    @foreach (var b in Model.Bills)
+    {
+        <tr><td>@b.BillDate.ToShortDateString()</td><td>@b.TotalAmount.ToString("C")</td><td>@b.AmountPaid.ToString("C")</td><td>@b.Status</td></tr>
+    }
+    </tbody>
+</table>
+
+<a asp-action="Index" class="btn btn-link">Back to list</a>

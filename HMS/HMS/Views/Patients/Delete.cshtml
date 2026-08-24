@@ -1,0 +1,11 @@
+@model Patient
+@{
+    ViewData["Title"] = "Delete Patient";
+}
+<h2>Delete Patient</h2>
+<div class="alert alert-warning">Are you sure you want to delete <strong>@Model.FullName</strong>? This will remove their appointments, records, and bills too.</div>
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>
