@@ -1,98 +1,118 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using HMS.Models;
-using Microsoft.AspNetCore.Authorization;
+using HMS.Models.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace HMS.Controllers
 {
-    public class AccountController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IConfiguration _configuration;
 
-        public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
+        public AuthController(
+            SignInManager<ApplicationUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            IConfiguration configuration)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _configuration = configuration;
         }
 
-        [HttpGet]
-        public IActionResult Login(string? returnUrl = null)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            ViewData["ReturnUrl"] = returnUrl;
-            return View();
-        }
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+                return Unauthorized(new { message = "Invalid login attempt." });
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string email, string password, bool rememberMe, string? returnUrl = null)
-        {
-            ViewData["ReturnUrl"] = returnUrl;
-
-            var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, lockoutOnFailure: true);
-            if (result.Succeeded)
-            {
-                return !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
-                    ? Redirect(returnUrl)
-                    : RedirectToAction("Index", "Dashboard");
-            }
+            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
 
             if (result.IsLockedOut)
-            {
-                ModelState.AddModelError(string.Empty, "Account locked due to multiple failed attempts. Try again later.");
-            }
-            else
-            {
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-            }
+                return Unauthorized(new { message = "Account locked due to multiple failed attempts. Try again later." });
 
-            return View();
+            if (!result.Succeeded)
+                return Unauthorized(new { message = "Invalid login attempt." });
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = GenerateJwtToken(user, roles);
+
+            return Ok(new AuthResponse
+            {
+                Token = token,
+                Email = user.Email!,
+                FullName = user.FullName,
+                Roles = roles
+            });
         }
 
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(string fullName, string email, string password, string role)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             var user = new ApplicationUser
             {
-                UserName = email,
-                Email = email,
-                FullName = fullName
+                UserName = request.Email,
+                Email = request.Email,
+                FullName = request.FullName
             };
 
-            var result = await _userManager.CreateAsync(user, password);
-            if (result.Succeeded)
-            {
-                var allowedRoles = new[] { "Doctor", "Nurse", "Receptionist", "LabStaff", "Pharmacist", "Accountant" };
-                await _userManager.AddToRoleAsync(user, allowedRoles.Contains(role) ? role : "Receptionist");
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+                return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
 
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                return RedirectToAction("Index", "Dashboard");
-            }
+            var allowedRoles = new[] { "Doctor", "Nurse", "Receptionist", "LabStaff", "Pharmacist", "Accountant" };
+            await _userManager.AddToRoleAsync(user, allowedRoles.Contains(request.Role) ? request.Role : "Receptionist");
 
-            foreach (var error in result.Errors)
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = GenerateJwtToken(user, roles);
+
+            return Ok(new AuthResponse
             {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-            return View();
+                Token = token,
+                Email = user.Email!,
+                FullName = user.FullName,
+                Roles = roles
+            });
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> Logout()
+        private string GenerateJwtToken(ApplicationUser user, IList<string> roles)
         {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction("Login");
-        }
+            var key = _configuration["Jwt:Key"] ?? "HMS-Super-Secret-Key-Change-In-Production-2024!";
+            var issuer = _configuration["Jwt:Issuer"] ?? "HMS-API";
+            var audience = _configuration["Jwt:Audience"] ?? "HMS-Client";
 
-        [HttpGet]
-        public IActionResult AccessDenied() => View();
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, user.Id),
+                new(ClaimTypes.Email, user.Email!),
+                new(ClaimTypes.Name, user.FullName),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(8),
+                signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }

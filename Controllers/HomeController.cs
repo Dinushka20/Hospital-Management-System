@@ -2,8 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HMS.Controllers
 {
-    public class HomeController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class HomeController : ControllerBase
     {
-        public IActionResult Error() => View();
+        [HttpGet]
+        public IActionResult Index()
+        {
+            return Ok(new { message = "HMS API is running.", version = "1.0" });
+        }
     }
 }

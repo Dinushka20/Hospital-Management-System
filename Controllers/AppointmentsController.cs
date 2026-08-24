@@ -1,14 +1,16 @@
 using HMS.Data;
 using HMS.Models;
+using HMS.Models.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace HMS.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
     [Authorize]
-    public class AppointmentsController : Controller
+    public class AppointmentsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
 
@@ -17,65 +19,79 @@ namespace HMS.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
             var appointments = await _context.Appointments
                 .Include(a => a.Patient)
                 .Include(a => a.Doctor)
                 .OrderBy(a => a.AppointmentDate)
-                .ToListAsync();
-            return View(appointments);
-        }
+                .Select(a => new AppointmentDto
+                {
+                    Id = a.Id,
+                    PatientId = a.PatientId,
+                    PatientName = a.Patient != null ? a.Patient.FullName : "",
+                    DoctorId = a.DoctorId,
+                    DoctorName = a.Doctor != null ? a.Doctor.FullName : "",
+                    AppointmentDate = a.AppointmentDate,
+                    Reason = a.Reason,
+                    Status = a.Status.ToString(),
+                    Notes = a.Notes
+                }).ToListAsync();
 
-        public async Task<IActionResult> Create()
-        {
-            await PopulateDropdowns();
-            return View(new Appointment());
+            return Ok(appointments);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PatientId,DoctorId,AppointmentDate,Reason,Notes")] Appointment appointment)
+        public async Task<IActionResult> Create([FromBody] CreateAppointmentRequest request)
         {
-            if (!ModelState.IsValid)
+            var appointment = new Appointment
             {
-                await PopulateDropdowns(appointment.PatientId, appointment.DoctorId);
-                return View(appointment);
-            }
+                PatientId = request.PatientId,
+                DoctorId = request.DoctorId,
+                AppointmentDate = request.AppointmentDate,
+                Reason = request.Reason,
+                Notes = request.Notes,
+                Status = AppointmentStatus.Scheduled
+            };
 
             _context.Add(appointment);
             await _context.SaveChangesAsync();
-            TempData["Success"] = "Appointment booked.";
-            return RedirectToAction(nameof(Index));
+
+            return CreatedAtAction(nameof(GetAll), new { id = appointment.Id }, new AppointmentDto
+            {
+                Id = appointment.Id,
+                PatientId = appointment.PatientId,
+                DoctorId = appointment.DoctorId,
+                AppointmentDate = appointment.AppointmentDate,
+                Reason = appointment.Reason,
+                Status = appointment.Status.ToString(),
+                Notes = appointment.Notes
+            });
         }
 
-        public async Task<IActionResult> Edit(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateAppointmentRequest request)
         {
             var appointment = await _context.Appointments.FindAsync(id);
             if (appointment == null) return NotFound();
-            await PopulateDropdowns(appointment.PatientId, appointment.DoctorId);
-            return View(appointment);
-        }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,PatientId,DoctorId,AppointmentDate,Reason,Status,Notes")] Appointment appointment)
-        {
-            if (id != appointment.Id) return NotFound();
-            if (!ModelState.IsValid)
+            appointment.PatientId = request.PatientId;
+            appointment.DoctorId = request.DoctorId;
+            appointment.AppointmentDate = request.AppointmentDate;
+            appointment.Reason = request.Reason;
+            appointment.Notes = request.Notes;
+
+            if (Enum.TryParse<AppointmentStatus>(request.Status, true, out var status))
             {
-                await PopulateDropdowns(appointment.PatientId, appointment.DoctorId);
-                return View(appointment);
+                appointment.Status = status;
             }
 
-            _context.Update(appointment);
             await _context.SaveChangesAsync();
-            TempData["Success"] = "Appointment updated.";
-            return RedirectToAction(nameof(Index));
+            return NoContent();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost("{id}/cancel")]
         public async Task<IActionResult> Cancel(int id)
         {
             var appointment = await _context.Appointments.FindAsync(id);
@@ -83,13 +99,7 @@ namespace HMS.Controllers
 
             appointment.Status = AppointmentStatus.Cancelled;
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private async Task PopulateDropdowns(int? patientId = null, int? doctorId = null)
-        {
-            ViewBag.Patients = new SelectList(await _context.Patients.OrderBy(p => p.FullName).ToListAsync(), "Id", "FullName", patientId);
-            ViewBag.Doctors = new SelectList(await _context.Doctors.OrderBy(d => d.FullName).ToListAsync(), "Id", "FullName", doctorId);
+            return Ok(new { message = "Appointment cancelled." });
         }
     }
 }
