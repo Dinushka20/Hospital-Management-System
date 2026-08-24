@@ -113,30 +113,37 @@ namespace HMS.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreatePatientRequest request)
         {
-            var patient = new Patient
+            try
             {
-                FullName = request.FullName,
-                DateOfBirth = request.DateOfBirth,
-                Gender = request.Gender,
-                Phone = request.Phone,
-                Address = request.Address,
-                BloodGroup = request.BloodGroup,
-                RegisteredOn = DateTime.Now
-            };
+                var patient = new Patient
+                {
+                    FullName = request.FullName,
+                    DateOfBirth = DateTime.SpecifyKind(request.DateOfBirth, DateTimeKind.Utc),
+                    Gender = request.Gender,
+                    Phone = request.Phone,
+                    Address = request.Address,
+                    BloodGroup = request.BloodGroup,
+                    RegisteredOn = DateTime.UtcNow
+                };
 
-            _context.Add(patient);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = patient.Id }, new PatientDto
+                _context.Add(patient);
+                await _context.SaveChangesAsync();
+                return CreatedAtAction(nameof(GetById), new { id = patient.Id }, new PatientDto
+                {
+                    Id = patient.Id,
+                    FullName = patient.FullName,
+                    DateOfBirth = patient.DateOfBirth,
+                    Gender = patient.Gender,
+                    Phone = patient.Phone,
+                    Address = patient.Address,
+                    BloodGroup = patient.BloodGroup,
+                    RegisteredOn = patient.RegisteredOn
+                });
+            }
+            catch (Exception ex)
             {
-                Id = patient.Id,
-                FullName = patient.FullName,
-                DateOfBirth = patient.DateOfBirth,
-                Gender = patient.Gender,
-                Phone = patient.Phone,
-                Address = patient.Address,
-                BloodGroup = patient.BloodGroup,
-                RegisteredOn = patient.RegisteredOn
-            });
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         [HttpPut("{id}")]

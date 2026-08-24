@@ -45,29 +45,36 @@ namespace HMS.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateAppointmentRequest request)
         {
-            var appointment = new Appointment
+            try
             {
-                PatientId = request.PatientId,
-                DoctorId = request.DoctorId,
-                AppointmentDate = request.AppointmentDate,
-                Reason = request.Reason,
-                Notes = request.Notes,
-                Status = AppointmentStatus.Scheduled
-            };
+                var appointment = new Appointment
+                {
+                    PatientId = request.PatientId,
+                    DoctorId = request.DoctorId,
+                    AppointmentDate = DateTime.SpecifyKind(request.AppointmentDate, DateTimeKind.Utc),
+                    Reason = request.Reason,
+                    Notes = request.Notes,
+                    Status = AppointmentStatus.Scheduled
+                };
 
-            _context.Add(appointment);
-            await _context.SaveChangesAsync();
+                _context.Add(appointment);
+                await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetAll), new { id = appointment.Id }, new AppointmentDto
+                return CreatedAtAction(nameof(GetAll), new { id = appointment.Id }, new AppointmentDto
+                {
+                    Id = appointment.Id,
+                    PatientId = appointment.PatientId,
+                    DoctorId = appointment.DoctorId,
+                    AppointmentDate = appointment.AppointmentDate,
+                    Reason = appointment.Reason,
+                    Status = appointment.Status.ToString(),
+                    Notes = appointment.Notes
+                });
+            }
+            catch (Exception ex)
             {
-                Id = appointment.Id,
-                PatientId = appointment.PatientId,
-                DoctorId = appointment.DoctorId,
-                AppointmentDate = appointment.AppointmentDate,
-                Reason = appointment.Reason,
-                Status = appointment.Status.ToString(),
-                Notes = appointment.Notes
-            });
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
 
         [HttpPut("{id}")]

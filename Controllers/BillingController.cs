@@ -83,7 +83,7 @@ namespace HMS.Controllers
             if (patient == null)
                 return BadRequest(new { message = "Please select a valid patient." });
 
-            var bill = new Bill { PatientId = request.PatientId, BillDate = DateTime.Now };
+            var bill = new Bill { PatientId = request.PatientId, BillDate = DateTime.UtcNow };
 
             void AddIfPositive(string description, decimal amount)
             {

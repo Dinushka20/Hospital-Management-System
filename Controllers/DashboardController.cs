@@ -21,29 +21,36 @@ namespace HMS.Controllers
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {
-            var today = DateTime.Today;
-            var tomorrow = today.AddDays(1);
-
-            var totalPatients = await _context.Patients.CountAsync();
-            var totalDoctors = await _context.Doctors.CountAsync();
-            var todaysAppointments = await _context.Appointments
-                .CountAsync(a => a.AppointmentDate >= today && a.AppointmentDate < tomorrow);
-            var revenueThisMonth = await _context.Bills
-                .Where(b => b.BillDate.Month == today.Month && b.BillDate.Year == today.Year)
-                .SelectMany(b => b.Items)
-                .SumAsync(i => (decimal?)i.Amount) ?? 0m;
-
-            var allBills = await _context.Bills.Include(b => b.Items).ToListAsync();
-            var outstanding = allBills.Sum(b => b.Balance);
-
-            return Ok(new DashboardStats
+            try
             {
-                TotalPatients = totalPatients,
-                TotalDoctors = totalDoctors,
-                TodaysAppointments = todaysAppointments,
-                RevenueThisMonth = revenueThisMonth,
-                OutstandingBalance = outstanding
-            });
+                var todayUtc = DateTime.UtcNow.Date;
+                var tomorrowUtc = todayUtc.AddDays(1);
+
+                var totalPatients = await _context.Patients.CountAsync();
+                var totalDoctors = await _context.Doctors.CountAsync();
+                var todaysAppointments = await _context.Appointments
+                    .CountAsync(a => a.AppointmentDate >= todayUtc && a.AppointmentDate < tomorrowUtc);
+                var revenueThisMonth = await _context.Bills
+                    .Where(b => b.BillDate.Month == todayUtc.Month && b.BillDate.Year == todayUtc.Year)
+                    .SelectMany(b => b.Items)
+                    .SumAsync(i => (decimal?)i.Amount) ?? 0m;
+
+                var allBills = await _context.Bills.Include(b => b.Items).ToListAsync();
+                var outstanding = allBills.Sum(b => b.Balance);
+
+                return Ok(new DashboardStats
+                {
+                    TotalPatients = totalPatients,
+                    TotalDoctors = totalDoctors,
+                    TodaysAppointments = todaysAppointments,
+                    RevenueThisMonth = revenueThisMonth,
+                    OutstandingBalance = outstanding
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message });
+            }
         }
     }
 }
