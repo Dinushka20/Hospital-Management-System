@@ -485,7 +485,7 @@ body {
 
 .stat-info { display: flex; flex-direction: column; min-width: 0; }
 .stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.5px; color: var(--text-primary); }
-.stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+.stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; font-weight: 600; }
 
 /* ===== QUICK ACTIONS ===== */
 .quick-action-card {
