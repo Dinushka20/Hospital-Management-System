@@ -57,30 +57,37 @@ namespace HMS.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            var user = new ApplicationUser
+            try
             {
-                UserName = request.Email,
-                Email = request.Email,
-                FullName = request.FullName
-            };
+                var user = new ApplicationUser
+                {
+                    UserName = request.Email,
+                    Email = request.Email,
+                    FullName = request.FullName
+                };
 
-            var result = await _userManager.CreateAsync(user, request.Password);
-            if (!result.Succeeded)
-                return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+                var result = await _userManager.CreateAsync(user, request.Password);
+                if (!result.Succeeded)
+                    return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
 
-            var allowedRoles = new[] { "Doctor", "Nurse", "Receptionist", "LabStaff", "Pharmacist", "Accountant" };
-            await _userManager.AddToRoleAsync(user, allowedRoles.Contains(request.Role) ? request.Role : "Receptionist");
+                var allowedRoles = new[] { "Doctor", "Nurse", "Receptionist", "LabStaff", "Pharmacist", "Accountant" };
+                await _userManager.AddToRoleAsync(user, allowedRoles.Contains(request.Role) ? request.Role : "Receptionist");
 
-            var roles = await _userManager.GetRolesAsync(user);
-            var token = GenerateJwtToken(user, roles);
+                var roles = await _userManager.GetRolesAsync(user);
+                var token = GenerateJwtToken(user, roles);
 
-            return Ok(new AuthResponse
+                return Ok(new AuthResponse
+                {
+                    Token = token,
+                    Email = user.Email!,
+                    FullName = user.FullName,
+                    Roles = roles
+                });
+            }
+            catch (Exception ex)
             {
-                Token = token,
-                Email = user.Email!,
-                FullName = user.FullName,
-                Roles = roles
-            });
+                return StatusCode(500, new { error = ex.Message, inner = ex.InnerException?.Message, stackTrace = ex.StackTrace });
+            }
         }
 
         private string GenerateJwtToken(ApplicationUser user, IList<string> roles)
