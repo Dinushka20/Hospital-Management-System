@@ -1,13 +1,17 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiGrid, FiUsers, FiUserPlus, FiCalendar, FiDollarSign, FiLogOut, FiActivity } from 'react-icons/fi';
+import {
+  FiGrid, FiUsers, FiUserCheck, FiCalendar,
+  FiCreditCard, FiLogOut, FiActivity
+} from 'react-icons/fi';
+import { RiHospitalLine } from 'react-icons/ri';
 
 const navItems = [
-  { to: '/', icon: <FiGrid />, label: 'Dashboard' },
-  { to: '/patients', icon: <FiUsers />, label: 'Patients' },
-  { to: '/doctors', icon: <FiUserPlus />, label: 'Doctors' },
-  { to: '/appointments', icon: <FiCalendar />, label: 'Appointments' },
-  { to: '/billing', icon: <FiDollarSign />, label: 'Billing' },
+  { to: '/',             icon: <FiGrid />,       label: 'Dashboard' },
+  { to: '/patients',     icon: <FiUsers />,      label: 'Patients' },
+  { to: '/doctors',      icon: <FiUserCheck />,  label: 'Doctors' },
+  { to: '/appointments', icon: <FiCalendar />,   label: 'Appointments' },
+  { to: '/billing',      icon: <FiCreditCard />, label: 'Billing' },
 ];
 
 export default function Sidebar() {
@@ -19,33 +23,51 @@ export default function Sidebar() {
     navigate('/login');
   };
 
+  const initials = user?.fullName
+    ? user.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
+    : 'U';
+
   return (
     <aside className="sidebar">
+      {/* Brand */}
       <div className="sidebar-brand">
-        <FiActivity className="brand-icon" />
-        <span>HMS</span>
+        <div className="brand-logo">
+          <RiHospitalLine />
+        </div>
+        <div className="brand-text">
+          <span className="brand-name">MediCore HMS</span>
+          <span className="brand-tagline">Hospital Management</span>
+        </div>
       </div>
 
+      {/* Navigation */}
+      <p className="sidebar-section-title">Main Menu</p>
       <nav className="sidebar-nav">
         {navItems.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.to === '/'} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            {item.icon}
-            <span>{item.label}</span>
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/'}
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-label">{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
+      {/* User Footer */}
       <div className="sidebar-footer">
-        <div className="user-info">
-          <div className="user-avatar">{user?.fullName?.charAt(0) || 'U'}</div>
-          <div className="user-details">
-            <span className="user-name">{user?.fullName || 'User'}</span>
-            <span className="user-role">{user?.roles?.[0] || 'Staff'}</span>
+        <div className="user-card">
+          <div className="user-avatar">{initials}</div>
+          <div className="user-info">
+            <div className="user-name">{user?.fullName || 'User'}</div>
+            <div className="user-role">{user?.roles?.[0] || 'Staff'}</div>
           </div>
+          <button className="btn-logout" onClick={handleLogout} title="Logout">
+            <FiLogOut />
+          </button>
         </div>
-        <button className="btn-logout" onClick={handleLogout}>
-          <FiLogOut />
-        </button>
       </div>
     </aside>
   );
