@@ -71,6 +71,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "http://localhost:5173",                              // Vite dev server
             "https://localhost:5173",
+            "https://hospital-management-system-nine-alpha.vercel.app", // Vercel Production
             builder.Configuration["FrontendUrl"] ?? "http://localhost:5173"
         )
         .AllowAnyHeader()
