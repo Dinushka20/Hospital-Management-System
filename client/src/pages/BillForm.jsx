@@ -44,12 +44,12 @@ export default function BillForm() {
                 {patients.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
               </select>
             </div>
-            <div className="form-group"><label>Consultation ($)</label><input type="number" step="0.01" min="0" value={form.consultationCharge} onChange={update('consultationCharge')} /></div>
-            <div className="form-group"><label>Laboratory ($)</label><input type="number" step="0.01" min="0" value={form.laboratoryCharge} onChange={update('laboratoryCharge')} /></div>
-            <div className="form-group"><label>Pharmacy ($)</label><input type="number" step="0.01" min="0" value={form.pharmacyCharge} onChange={update('pharmacyCharge')} /></div>
-            <div className="form-group"><label>Admission ($)</label><input type="number" step="0.01" min="0" value={form.admissionCharge} onChange={update('admissionCharge')} /></div>
+            <div className="form-group"><label>Consultation (LKR)</label><input type="number" step="0.01" min="0" value={form.consultationCharge} onChange={update('consultationCharge')} /></div>
+            <div className="form-group"><label>Laboratory (LKR)</label><input type="number" step="0.01" min="0" value={form.laboratoryCharge} onChange={update('laboratoryCharge')} /></div>
+            <div className="form-group"><label>Pharmacy (LKR)</label><input type="number" step="0.01" min="0" value={form.pharmacyCharge} onChange={update('pharmacyCharge')} /></div>
+            <div className="form-group"><label>Admission (LKR)</label><input type="number" step="0.01" min="0" value={form.admissionCharge} onChange={update('admissionCharge')} /></div>
           </div>
-          <div className="total-display">Total: <strong>${total.toFixed(2)}</strong></div>
+          <div className="total-display">Total: <strong>LKR {total.toFixed(2)}</strong></div>
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/billing')}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Creating...' : 'Generate Invoice'}</button>

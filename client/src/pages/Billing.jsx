@@ -25,9 +25,9 @@ export default function Billing() {
                   <td className="fw-medium">INV-{String(b.id).padStart(4, '0')}</td>
                   <td>{b.patientName}</td>
                   <td>{new Date(b.billDate).toLocaleDateString()}</td>
-                  <td>${b.totalAmount.toFixed(2)}</td>
-                  <td>${b.amountPaid.toFixed(2)}</td>
-                  <td>${b.balance.toFixed(2)}</td>
+                  <td>LKR {b.totalAmount.toFixed(2)}</td>
+                  <td>LKR {b.amountPaid.toFixed(2)}</td>
+                  <td>LKR {b.balance.toFixed(2)}</td>
                   <td><span className={`badge badge-${b.status.toLowerCase()}`}>{b.status}</span></td>
                   <td className="actions">
                     <Link to={`/billing/${b.id}`} className="btn-icon" title="View"><FiEye /></Link>

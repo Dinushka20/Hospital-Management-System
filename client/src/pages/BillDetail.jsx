@@ -39,18 +39,18 @@ export default function BillDetail() {
               <thead><tr><th>Description</th><th>Amount</th></tr></thead>
               <tbody>
                 {bill.items.map(i => (
-                  <tr key={i.id}><td>{i.description}</td><td>${i.amount.toFixed(2)}</td></tr>
+                  <tr key={i.id}><td>{i.description}</td><td>LKR {i.amount.toFixed(2)}</td></tr>
                 ))}
-                <tr className="total-row"><td><strong>Total</strong></td><td><strong>${bill.totalAmount.toFixed(2)}</strong></td></tr>
+                <tr className="total-row"><td><strong>Total</strong></td><td><strong>LKR {bill.totalAmount.toFixed(2)}</strong></td></tr>
               </tbody>
             </table>
           </div>
         </div>
         <div className="detail-card">
           <h3>Payment Summary</h3>
-          <div className="detail-row"><span>Total</span><span>${bill.totalAmount.toFixed(2)}</span></div>
-          <div className="detail-row"><span>Paid</span><span className="text-green">${bill.amountPaid.toFixed(2)}</span></div>
-          <div className="detail-row"><span>Balance</span><span className="text-red">${bill.balance.toFixed(2)}</span></div>
+          <div className="detail-row"><span>Total</span><span>LKR {bill.totalAmount.toFixed(2)}</span></div>
+          <div className="detail-row"><span>Paid</span><span className="text-green">LKR {bill.amountPaid.toFixed(2)}</span></div>
+          <div className="detail-row"><span>Balance</span><span className="text-red">LKR {bill.balance.toFixed(2)}</span></div>
           {bill.status !== 'Paid' && (
             <form onSubmit={handlePay} className="pay-form">
               <input type="number" step="0.01" min="0.01" placeholder="Payment amount" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} required />
